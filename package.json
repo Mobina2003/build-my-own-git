@@ -1,0 +1,20 @@
+{
+  "name": "mogi",
+  "version": "1.0.0",
+  "description": "Building a Git is a simple source control system inspired by Git but with fewer commands. It aims to provide basic version control functionality for projects.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Mobina2003/build-my-own-git.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Mobina2003/build-my-own-git/issues"
+  },
+  "homepage": "https://github.com/Mobina2003/build-my-own-git#readme"
+}
