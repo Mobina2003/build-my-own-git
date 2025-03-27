@@ -16,5 +16,8 @@
   "bugs": {
     "url": "https://github.com/Mobina2003/build-my-own-git/issues"
   },
-  "homepage": "https://github.com/Mobina2003/build-my-own-git#readme"
+  "homepage": "https://github.com/Mobina2003/build-my-own-git#readme",
+  "dependencies": {
+    "chalk": "^5.4.1"
+  }
 }
