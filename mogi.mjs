@@ -1,13 +1,14 @@
-
+#!/user/bin/env node
 import path from 'path';
 import fs from 'fs/promises';
 import crypto from 'crypto';
 import { timeStamp } from 'console';
 import {difflines} from 'diff';
 import chalk from 'chalk';
-
+import { Command } from 'commander';
 
 const program = new Command();
+
 class mogi
 {
     constructor(repoPath='.')
@@ -191,12 +192,25 @@ class mogi
         }
     }
 }
-(async () =>
-{
+program.command('makeRepo').action(async () => {
     const repo = new mogi();
     await repo.init();
-    await repo.add('sample.txt');
-    await repo.commite('second commit');
+    console.log('mogi initialized');
+});
+program.command('add <file>').action(async (file) => {
+    const repo = new mogi();
+    await repo.add(file);
+});
+program.command('save <message>').action(async (message) => {
+    const repo = new mogi();
+    await repo.commite(message);
+});
+program.command('log').action(async () => {
+    const repo = new mogi();
     await repo.log();
-})();
+});
+program.command('show <commitHash>').action(async (commitHash) => {
+    const repo = new mogi();
+    await repo.showCommiteDiff(commitHash);
+});
 
