@@ -1,7 +1,13 @@
+
 import path from 'path';
 import fs from 'fs/promises';
 import crypto from 'crypto';
 import { timeStamp } from 'console';
+import {difflines} from 'diff';
+import chalk from 'chalk';
+
+
+const program = new Command();
 class mogi
 {
     constructor(repoPath='.')
@@ -115,10 +121,64 @@ class mogi
         for(const file of commitData.files)
         {
             console.log(`File: ${file.path}`);
-        }
+            const fileContent = await this.getFileContent(file.hash);
+            console.log(`Content: ${fileContent}`);
 
-        //CHECK POINT:)
+            if(commitData.parent)
+            {
+                const parentCommitData = JSON.parse(await this.getCommitData(commitData.parent));
+                const getParentFileContent = await this.getParentFileContent(parentCommitData, file.path);
+                if(getParentFileContent !== undefined)
+                {
+                    console.log('\nDiff:');
+                    const diff = difflines(getParentFileContent, fileContent);
+                    console.log(diff);
+
+                    diff.forEach(part => {
+                        if(part.added)
+                        {
+                            process.stdout.write(chalk.green(part.value));
+
+                        }else if(part.removed)
+                        {
+                            process.stdout.write(chalk.red(part.value));
+                        }else
+                        {
+                            process.stdout.write(chalk.grey(part.value));
+                        }
+                        
+                    });
+                    console.log(); //newline
+
+                }
+                else
+                {
+                    console.log('file not found in the parent commit');
+                }
+            }
+            else
+            {
+                console.log('no parent commit');
+            }
+
+        }
     }
+    async getParentFileContent(parentCommitData,filePath)
+    {
+        const parentFile = parentCommitData.files.find(file => file.path === filePath);
+        if(parentFile)
+        {
+            const parentFileContent = await this.getFileContent(parentFile.hash);
+            return parentFileContent;
+        }
+        return null;
+    }
+    async getFileContent(fileHash)
+    {
+        const filePath = path.join(this.objectspath, fileHash);
+        return fs.readFile(filePath, {encoding: 'utf-8'})
+    }
+    
     async getCommitData(commitHash)
     {
         const commitPath = path.join(this.objectspath, commitHash);
