@@ -1,7 +1,14 @@
+#!/usr/bin/env node
 import path from 'path';
 import fs from 'fs/promises';
 import crypto from 'crypto';
 import { timeStamp } from 'console';
+import {diffLines} from 'diff';
+import chalk from 'chalk';
+import { Command } from 'commander';
+
+const program = new Command();
+
 class mogi
 {
     constructor(repoPath='.')
@@ -20,6 +27,7 @@ class mogi
         {    
             await fs.writeFile(this.headPath, '' , {flag: 'wx'}); //wx: write if not exist
             await fs.writeFile(this.indexpath, JSON.stringify([]), {flag: 'wx'});
+            console.log('mogi initialized');
         }catch(error)
         {
             console.log('already initialized .mogi folder');
@@ -37,7 +45,7 @@ class mogi
         const newFileObjectPath = path.join(this.objectspath, fileHash);
         await fs.writeFile(newFileObjectPath, fileData);
         await this.updateTheStagingArea(filesToBeAdded, fileHash);
-        console.log('added  ${filesToBeAdded}');
+        console.log(`added  ${filesToBeAdded}`);
 
     }
 
@@ -115,10 +123,64 @@ class mogi
         for(const file of commitData.files)
         {
             console.log(`File: ${file.path}`);
-        }
+            const fileContent = await this.getFileContent(file.hash);
+            console.log(`Content: ${fileContent}`);
 
-        //CHECK POINT:)
+            if(commitData.parent)
+            {
+                const parentCommitData = JSON.parse(await this.getCommitData(commitData.parent));
+                const getParentFileContent = await this.getParentFileContent(parentCommitData, file.path);
+                if(getParentFileContent !== undefined)
+                {
+                    console.log('\nDiff:');
+                    const diff = diffLines(getParentFileContent, fileContent);
+                    console.log(diff);
+
+                    diff.forEach(part => {
+                        if(part.added)
+                        {
+                            process.stdout.write(chalk.green(part.value));
+
+                        }else if(part.removed)
+                        {
+                            process.stdout.write(chalk.red(part.value));
+                        }else
+                        {
+                            process.stdout.write(chalk.grey(part.value));
+                        }
+                        
+                    });
+                    console.log(); //newline
+
+                }
+                else
+                {
+                    console.log('file not found in the parent commit');
+                }
+            }
+            else
+            {
+                console.log('no parent commit');
+            }
+
+        }
     }
+    async getParentFileContent(parentCommitData,filePath)
+    {
+        const parentFile = parentCommitData.files.find(file => file.path === filePath);
+        if(parentFile)
+        {
+            const parentFileContent = await this.getFileContent(parentFile.hash);
+            return parentFileContent;
+        }
+        return null;
+    }
+    async getFileContent(fileHash)
+    {
+        const filePath = path.join(this.objectspath, fileHash);
+        return fs.readFile(filePath, {encoding: 'utf-8'})
+    }
+    
     async getCommitData(commitHash)
     {
         const commitPath = path.join(this.objectspath, commitHash);
@@ -131,12 +193,26 @@ class mogi
         }
     }
 }
-(async () =>
-{
+program.command('makeRepo').action(async () => {
     const repo = new mogi();
     await repo.init();
-    await repo.add('sample.txt');
-    await repo.commite('second commit');
+    console.log('mogi initialized');
+});
+program.command('add <file>').action(async (file) => {
+    const repo = new mogi();
+    await repo.add(file);
+});
+program.command('save <message>').action(async (message) => {
+    const repo = new mogi();
+    await repo.commite(message);
+});
+program.command('log').action(async () => {
+    const repo = new mogi();
     await repo.log();
-})();
+});
+program.command('show <commitHash>').action(async (commitHash) => {
+    const repo = new mogi();
+    await repo.showCommiteDiff(commitHash);
+});
+program.parse(process.argv);
 
